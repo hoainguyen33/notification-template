@@ -1,6 +1,8 @@
 package route
 
 import (
+	"fmt"
+
 	_ "github.com/satori/go.uuid"
 
 	"getcare-notification/internal/controller"
@@ -16,7 +18,7 @@ func (r *route) RunAPI() error {
 		ctx.String(http.StatusOK, "Welcome to Our GetCare")
 	})
 
-	apiRoutes := r.ApiGin.Group("/api/v1")
+	apiRoutes := r.ApiGin.Group(fmt.Sprintf("/api/%s", r.Cfg.AppVersion))
 
 	apiRoutes.GET("/heathcheck", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "Status: OK")

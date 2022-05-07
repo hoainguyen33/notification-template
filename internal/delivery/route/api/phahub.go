@@ -40,10 +40,6 @@ func PhahubAPI(address string, r *gin.Engine, apiRoutes *gin.RouterGroup, c *con
 		)
 	})
 
-	apiRoutes.OPTIONS("/message", Options, middleware.Cors())
-	apiRoutes.OPTIONS("/message/send", Options, middleware.Cors())
-	apiRoutes.OPTIONS("/message/sms", Options, middleware.Cors())
-
 	// apiRoutes.OPTIONS("/log_message", Options, middleware.Cors())
 	// logMessage := apiRoutes.Group("/log_message", middleware.Cors())
 	// {

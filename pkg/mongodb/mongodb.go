@@ -2,7 +2,7 @@ package mongodb
 
 import (
 	"context"
-	"getcare-notification/constant/config"
+	"getcare-notification/config"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"

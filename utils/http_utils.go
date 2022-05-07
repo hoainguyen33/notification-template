@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"getcare-notification/internal/model"
 	"io/ioutil"
@@ -15,36 +14,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
-var (
-	REQUEST_LOG_ID  = "log_id"
-	ErrOTPIncorrect = errors.New("OTP incorrect! Please check and reenter the 6-digit OTP")
-	ErrOTP60s       = errors.New("you cannot request OTP 2 times in a row no more than 60 seconds apart")
-	ErrOTP1h        = errors.New("you can request and/or enter the OTP incorrectly a maximum of three times. After 3 unsuccessful OTP attempts, your OTP authentication will be blocked for 1 hour")
-	ErrOTPExpired   = errors.New("OTP code is valid for 150 seconds. If you do not confirm the OTP within the lapsed time, please press “Resend” to request a new OTP")
-	ErrOTP3Times    = errors.New("you have entered wrongly more than 3 times. Please request another OTP and try again")
-)
-
-type PagedResult struct {
-	Result         bool        `json:"result"`
-	Data           interface{} `json:"data"`
-	AllowedActions []string    `json:"allowed_actions"`
-	RedirectUrl    string      `json:"redirect_url,omitempty"`
-}
-
-type PagedResults struct {
-	Result       bool        `json:"result"`
-	Page         int         `json:"page"`
-	PageSize     int         `json:"page_size"`
-	TotalRecords int64       `json:"total_records"`
-	Data         interface{} `json:"data"`
-}
-
-type HTTPError struct {
-	Result    bool   `json:"result"`
-	ErrorCode int    `json:"error_code"`
-	Message   string `json:"message" example:"status bad request"`
-}
 
 func SliceContains(slice interface{}, e interface{}) bool {
 	s := reflect.ValueOf(slice)

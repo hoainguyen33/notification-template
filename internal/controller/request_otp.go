@@ -2,8 +2,8 @@ package controller
 
 import (
 	"getcare-notification/constant/errors"
+	"getcare-notification/internal/domain"
 	"getcare-notification/internal/model"
-	"getcare-notification/internal/service"
 	"getcare-notification/utils"
 	"os"
 
@@ -16,12 +16,12 @@ type RequestOtpController interface {
 }
 
 type requestOtpController struct {
-	Service service.RequestOtpService
+	RequestOtpDomain domain.RequestOtpDomain
 }
 
-func NewRequestOtpController(service service.RequestOtpService) RequestOtpController {
+func NewRequestOtpController(requestOtpDomain domain.RequestOtpDomain) RequestOtpController {
 	return &requestOtpController{
-		Service: service,
+		RequestOtpDomain: requestOtpDomain,
 	}
 }
 
@@ -76,7 +76,7 @@ func (ro *requestOtpController) RequestOTP(ctx *gin.Context) {
 		return
 	}
 
-	err := ro.Service.RequestOtpAdd(*requestOtpAdd)
+	err := ro.RequestOtpDomain.RequestOtpAdd(*requestOtpAdd)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
@@ -102,7 +102,7 @@ func (ro *requestOtpController) VerifyOTP(ctx *gin.Context) {
 		return
 	}
 
-	err := ro.Service.VerifyOTP(*verifyOTP)
+	err := ro.RequestOtpDomain.VerifyOTP(*verifyOTP)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return

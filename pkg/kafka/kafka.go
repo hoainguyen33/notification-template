@@ -2,10 +2,12 @@ package kafka
 
 import (
 	"context"
+	"getcare-notification/config"
 
 	"github.com/segmentio/kafka-go"
 )
 
-func NewKafkaConn(brokers string) (*kafka.Conn, error) {
-	return kafka.DialContext(context.Background(), "tcp", brokers)
+// connect kafka with broker[0]
+func New(cfg *config.Config) (*kafka.Conn, error) {
+	return kafka.DialContext(context.Background(), "tcp", cfg.Kafka.Brokers[0])
 }

@@ -1,34 +1,25 @@
 package repository
 
 import (
-	"bytes"
 	"fmt"
-	"time"
 
 	"getcare-notification/internal/model"
+	"getcare-notification/utils"
 
-	"github.com/guregu/null"
-	uuid "github.com/satori/go.uuid"
 	"gorm.io/gorm"
 )
 
-var (
-	_ = time.Second
-	_ = null.Bool{}
-	_ = uuid.UUID{}
-)
-
 type UserFcmRepository interface {
-	List(page, pageSize int, order string, where map[string]interface{}) (results []*model.UserFcm, totalRows int64, err error)
-	Get(argId int32) (record *model.UserFcm, err error)
+	List(page, pageSize int, order string, where *utils.Where) ([]*model.UserFcm, int64, error)
+	Get(argId int32) (*model.UserFcm, error)
 	GetByUserId(userID string) ([]*model.UserFcm, error)
 	GetBySystemId(systemId string) ([]string, error)
 	GetBySystemIdNotUserId(systemId string, userId string) ([]string, error)
 	Create(userFcmAdd *model.UserFcmAdd) (result *model.UserFcm, err error)
-	CreateByUser(userFcmAdd *model.UserFcmAdd) (result *model.UserFcm, err error)
-	CreateByDevice(userFcmAdd *model.UserFcmAdd) (result *model.UserFcm, err error)
-	Update(argId int32, updated *model.UserFcm) (result *model.UserFcm, RowsAffected int64, err error)
-	Delete(argId int32) (rowsAffected int64, err error)
+	CreateByUser(userFcmAdd *model.UserFcmAdd) (*model.UserFcm, error)
+	CreateByDevice(userFcmAdd *model.UserFcmAdd) (*model.UserFcm, error)
+	Update(argId int32, updated *model.UserFcm) (*model.UserFcm, error)
+	Delete(argId int32) error
 	Begin() *gorm.DB
 }
 
@@ -42,53 +33,29 @@ func NewUserFcmRepository(table *gorm.DB) UserFcmRepository {
 	}
 }
 
-func (uf *userFcmRepository) List(page, pageSize int, order string, where map[string]interface{}) (results []*model.UserFcm, totalRows int64, err error) {
-
-	resultOrm := uf.Table.Model(&model.UserFcm{})
-
-	var sql bytes.Buffer
-	sql.WriteString("1")
-	for field, value := range where {
-		if value != "" {
-			switch field {
-			default:
-				sql.WriteString(" AND " + field + " LIKE '%" + value.(string) + "%'")
-			}
-		}
+func (uf *userFcmRepository) List(page, pageSize int, order string, where *utils.Where) (results []*model.UserFcm, total int64, err error) {
+	pipe := uf.Table.Model(&model.UserFcm{})
+	if where.Ok() {
+		pipe = pipe.Where(where.String())
 	}
-
-	if sql.String() != "1" {
-		resultOrm = resultOrm.Where(sql.String())
-	}
-
-	resultOrm.Count(&totalRows)
-
-	if page > 0 {
-		offset := (page - 1) * pageSize
-		resultOrm = resultOrm.Offset(offset).Limit(pageSize)
-	} else {
-		resultOrm = resultOrm.Limit(pageSize)
-	}
-
+	pipe.Count(&total)
+	offset := (page - 1) * pageSize
+	pipe = pipe.Offset(offset).Limit(pageSize)
 	if order != "" {
-		resultOrm = resultOrm.Order(order)
+		pipe = pipe.Order(order)
 	}
-
-	if err = resultOrm.Find(&results).Error; err != nil {
-		err = ErrNotFound
+	if err = pipe.Find(&results).Error; err != nil {
 		return nil, -1, err
 	}
 
-	return results, totalRows, nil
+	return results, total, nil
 }
 
 func (uf *userFcmRepository) Get(argId int32) (record *model.UserFcm, err error) {
 	record = &model.UserFcm{}
 	if err = uf.Table.First(record, argId).Error; err != nil {
-		err = ErrNotFound
 		return record, err
 	}
-
 	return record, nil
 }
 
@@ -148,42 +115,17 @@ func (uf *userFcmRepository) Create(userFcmAdd *model.UserFcmAdd) (result *model
 	return userFcm, nil
 }
 
-// UpdateUserFcm is a function to update a single record from user_fcm table in the getcare_messenger database
-// error - ErrNotFound, db record for id not found
-// error - ErrUpdateFailed, db meta data copy failed or db.Save call failed
-func (uf *userFcmRepository) Update(argId int32, updated *model.UserFcm) (*model.UserFcm, int64, error) {
+func (uf *userFcmRepository) Update(argId int32, updated *model.UserFcm) (*model.UserFcm, error) {
 	result := &model.UserFcm{}
-	db := uf.Table.First(argId)
-	if err := db.Error; err != nil {
-		return nil, -1, ErrNotFound
+	if err := uf.Table.Model(result).Updates(updated).Error; err != nil {
+		return nil, err
 	}
 
-	if err := Copy(result, updated); err != nil {
-		return nil, -1, ErrUpdateFailed
-	}
-
-	db = db.Save(result)
-	if err := db.Error; err != nil {
-		return nil, -1, ErrUpdateFailed
-	}
-
-	return result, db.RowsAffected, nil
+	return result, nil
 }
 
-func (uf *userFcmRepository) Delete(argId int32) (rowsAffected int64, err error) {
-
-	record := &model.UserFcm{}
-	db := uf.Table.First(record, argId)
-	if db.Error != nil {
-		return -1, ErrNotFound
-	}
-
-	db = db.Delete(record)
-	if err = db.Error; err != nil {
-		return -1, ErrDeleteFailed
-	}
-
-	return db.RowsAffected, nil
+func (uf *userFcmRepository) Delete(argId int32) error {
+	return uf.Table.Where(argId).Delete(&model.RequestOtp{}).Error
 }
 
 func (uf *userFcmRepository) GetByUserId(userID string) ([]*model.UserFcm, error) {

@@ -1,9 +1,9 @@
 package controller
 
 import (
+	"getcare-notification/constant/errors"
+	"getcare-notification/internal/domain"
 	"getcare-notification/internal/model"
-	"getcare-notification/internal/repository"
-	"getcare-notification/internal/service"
 	"getcare-notification/utils"
 
 	"github.com/Nerzal/gocloak/v10"
@@ -21,12 +21,12 @@ type UserFcmController interface {
 }
 
 type userFcmController struct {
-	Service service.UserFcmService
+	UserFcmDomain domain.UserFcmDomain
 }
 
-func NewUserFcmController(userFcmService service.UserFcmService) UserFcmController {
+func NewUserFcmController(userFcmDomain domain.UserFcmDomain) UserFcmController {
 	return &userFcmController{
-		Service: userFcmService,
+		UserFcmDomain: userFcmDomain,
 	}
 }
 
@@ -34,44 +34,36 @@ func (uf *userFcmController) List(ctx *gin.Context) {
 	r := ctx.Request
 	w := ctx.Writer
 	page, pageSize := utils.ReadPagination(w, r)
-
 	order := r.FormValue("order")
-	where := map[string]interface{}{
-		"name": r.FormValue("name"),
-	}
-	utils.WhereTrim(where)
-
-	records, totalRows, err := uf.Service.List(page, pageSize, order, where)
+	where := (&utils.Where{}).FromMap(utils.WhereMap{
+		"name": utils.WT("string", "LIKE"),
+	}).LoadData(r)
+	records, total, err := uf.UserFcmDomain.List(page, pageSize, order, where)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
 	}
-
-	result := &utils.PagedResults{Result: true, Page: page, PageSize: pageSize, Data: records, TotalRecords: totalRows}
+	result := &utils.PagedResults{Result: true, Page: page, PageSize: pageSize, Data: records, TotalRecords: total}
 	utils.WriteJSON(ctx, result)
 }
 
 func (uf *userFcmController) Get(ctx *gin.Context) {
 	r := ctx.Request
 	w := ctx.Writer
-
 	argId, err := utils.ParseInt32(ctx.Param("id"))
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
 	}
-
 	if err := utils.ValidateRequest(utils.InitializeContext(r), r, "user_fcm", model.RetrieveOne); err != nil {
 		utils.ReturnError(w, err)
 		return
 	}
-
-	record, err := uf.Service.Get(argId)
+	record, err := uf.UserFcmDomain.Get(argId)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
 	}
-
 	result := &utils.PagedResult{Result: true, Data: record}
 	utils.WriteJSON(ctx, result)
 }
@@ -83,7 +75,7 @@ func (uf *userFcmController) Create(ctx *gin.Context) {
 	userFcmAdd := &model.UserFcmAdd{}
 
 	if err := utils.ReadJSON(r, userFcmAdd); err != nil {
-		utils.ReturnError(w, repository.ErrBadParams)
+		utils.ReturnError(w, errors.ErrBadParams)
 		return
 	}
 	user := ctx.Keys["user"].(*gocloak.UserInfo)
@@ -92,7 +84,7 @@ func (uf *userFcmController) Create(ctx *gin.Context) {
 	} else {
 		userFcmAdd.UserID = ""
 	}
-	record, err := uf.Service.Create(userFcmAdd)
+	record, err := uf.UserFcmDomain.Create(userFcmAdd)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
@@ -106,7 +98,7 @@ func (uf *userFcmController) Update(ctx *gin.Context) {
 	// r := ctx.Request
 	w := ctx.Writer
 
-	utils.ReturnError(w, repository.ErrBadParams)
+	utils.ReturnError(w, errors.ErrBadParams)
 }
 
 func (uf *userFcmController) Delete(ctx *gin.Context) {
@@ -118,14 +110,12 @@ func (uf *userFcmController) Delete(ctx *gin.Context) {
 		utils.ReturnError(w, err)
 		return
 	}
-
-	rowsAffected, err := uf.Service.Delete(argId)
+	err = uf.UserFcmDomain.Delete(argId)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
 	}
-
-	result := &utils.PagedResult{Result: true, Data: rowsAffected}
+	result := &utils.PagedResult{Result: true, Data: argId}
 	utils.WriteJSON(ctx, result)
 }
 
@@ -134,13 +124,12 @@ func (uf *userFcmController) PushUserFcm(ctx *gin.Context) {
 	w := ctx.Writer
 
 	pushUserFcm := &model.PushUserFcm{}
-
 	if err := utils.ReadJSON(r, pushUserFcm); err != nil {
-		utils.ReturnError(w, repository.ErrBadParams)
+		utils.ReturnError(w, errors.ErrBadParams)
 		return
 	}
 
-	err := uf.Service.Push(pushUserFcm.UserID, pushUserFcm.Title, pushUserFcm.Body, pushUserFcm.Data)
+	err := uf.UserFcmDomain.Push(pushUserFcm.UserID, pushUserFcm.Title, pushUserFcm.Body, pushUserFcm.Data)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
@@ -151,5 +140,5 @@ func (uf *userFcmController) PushUserFcm(ctx *gin.Context) {
 }
 
 func (uf *userFcmController) Push(userID string, title string, body string, data interface{}) error {
-	return uf.Service.Push(userID, title, body, data)
+	return uf.UserFcmDomain.Push(userID, title, body, data)
 }

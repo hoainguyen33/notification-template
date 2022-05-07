@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"crypto/tls"
-	"getcare-notification/constant/config"
+	"getcare-notification/config"
 	"getcare-notification/pkg/logger"
 	"time"
 

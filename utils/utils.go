@@ -1,17 +1,18 @@
 package utils
 
 import (
-	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
 
-	"github.com/Nerzal/gocloak/v10"
 	"github.com/guregu/null"
 )
 
-const charsetString = "abcdefghijklmnopqrstuvwxyz" +
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const (
+	charsetString = "abcdefghijklmnopqrstuvwxyz" +
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	charsetNumber = "0123456789"
+)
 
 var seededRand *rand.Rand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
@@ -29,20 +30,8 @@ func StringWithCharset(length int, charset string) string {
 	return string(b)
 }
 
-func GetNameFromUser(user gocloak.User) string {
-	name := ""
-	if user.FirstName != nil {
-		name += fmt.Sprintf("%s", *user.FirstName)
-	}
-
-	if user.LastName != nil {
-		if name != "" {
-			name += " "
-		}
-		name += fmt.Sprintf("%s", *user.LastName)
-	}
-
-	return name
+func GeneratorNumber(length int) string {
+	return StringWithCharset(length, charsetNumber)
 }
 
 func FindString(slice []string, val string) (int, bool) {
@@ -105,4 +94,9 @@ func CheckIn(arr []string, v string) bool {
 		}
 	}
 	return false
+}
+
+func StringToTime(str string) (time.Time, error) {
+	format := "2006-01-02T15:04:05.000Z"
+	return time.Parse(format, str)
 }

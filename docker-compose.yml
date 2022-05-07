@@ -1,49 +1,11 @@
 version: "3"
 
 services:
-  # mongodb:
-  #   image: mongo
-  #   container_name: log_messager
-  #   ports:
-  #     - "27017:27017"
-  # redis:
-  #   image: docker.io/bitnami/redis:6.2
-  #   environment:
-  #     # ALLOW_EMPTY_PASSWORD is recommended only for development.
-  #     - ALLOW_EMPTY_PASSWORD=yes
-  #     - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
-  #   ports:
-  #     - '6379:6379'
-  #   volumes:
-  #     - redis_data:/bitnami/redis/data
-  # db:
-  #   image: mysql:8.0
-  #   command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-  #   environment:
-  #     MYSQL_ROOT_PASSWORD: Cucaixanh01.
-  #     MYSQL_DATABASE: getcare_test
-  #     MYSQL_USER: hoaivan
-  #     MYSQL_PASSWORD: Cucaixanh01.
-  #   volumes:
-  #     - db-data:/var/lib/mysql
-  #     # - ./db/my.cnf:/etc/mysql/conf.d/my.cnf
-  #     - ./dump:/docker-entrypoint-initdb.d
-  #   ports:
-  #     - 3306:3306
   server-app:
-    container_name: getcare-messager
-    build: .
-    image: a8cb0520f924
+    container_name: getcare-notification
+    # build: .
+    # image: a8cb0520f924
     ports:
       - "8000:8000"
     volumes:
     - .:/app
-    # depends_on:
-    # - "db"
-    # - "redis"
-    # - "mongodb"
-# volumes:
-#   redis_data:
-#     driver: local
-#   db-data:
-#     driver: local

@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"getcare-notification/config"
 	"getcare-notification/constant"
-	"getcare-notification/constant/config"
 	"getcare-notification/internal/controller"
-	kafkaGroup "getcare-notification/internal/kafka"
+	kafkaGroup "getcare-notification/internal/delivery/kafka"
+	"getcare-notification/internal/delivery/route"
+	"getcare-notification/internal/domain"
 	"getcare-notification/internal/repository"
-	"getcare-notification/internal/route"
-	"getcare-notification/internal/service"
 	"getcare-notification/pkg/firebase"
 	"getcare-notification/pkg/jaeger"
 	kafkaSrv "getcare-notification/pkg/kafka"
@@ -22,7 +22,6 @@ import (
 	"firebase.google.com/go/messaging"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
@@ -38,7 +37,7 @@ type Srv struct {
 	mongoDB  *mongo.Database
 	mysqlDB  *gorm.DB
 	kafka    *kafka.Conn
-	redis    *redis.Client
+	// redis    *redis.Client
 	firebase *messaging.Client
 	Routes   route.Routes
 }
@@ -134,7 +133,7 @@ func (srv *Srv) Tracer() io.Closer {
 }
 
 func (srv *Srv) Kafka() {
-	conn, err := kafkaSrv.NewKafkaConn(srv.cfg.Kafka.Brokers[0])
+	conn, err := kafkaSrv.New(srv.cfg)
 	if err != nil {
 		srv.logger.Fatal("NewKafkaConn", err)
 	}
@@ -165,26 +164,26 @@ func (srv *Srv) configRoute() {
 	requestOtpRepository := repository.NewRequestOtpRepository(srv.mysqlDB)
 	verifyOtpRepository := repository.NewVerifyOtpRepository(srv.mysqlDB)
 	logMessageRepository := repository.NewLogMessageRepository(srv.mongoDB)
-	userFcmService := service.NewUserFcmService(userFcmRepository)
-	logMessageService := service.NewLogMessageService(logMessageRepository)
-	srv.Routes = route.NewRoute(srv.grpcClient, kafkaGroup.NewKafkaGroup(srv.cfg.Kafka.Brokers,
+	userFcmDomain := domain.NewUserFcmDomain(userFcmRepository)
+	logMessageDomain := domain.NewLogMessageDomain(logMessageRepository)
+	srv.Routes = route.NewRoute(kafkaGroup.NewKafkaGroup(srv.cfg.Kafka.Brokers,
 		constant.NotificationGroupId, srv.logger, srv.validate), gin.Default(), &controller.Controller{
 		RequestOtpController: controller.NewRequestOtpController(
-			service.NewRequestOtpService(
+			domain.NewRequestOtpDomain(
 				requestOtpRepository,
 				verifyOtpRepository,
 			),
 		),
 		VerifyOtpController: controller.NewVerifyOtpController(
-			service.NewVerifyOtpService(
+			domain.NewVerifyOtpDomain(
 				verifyOtpRepository,
 			),
 		),
 		UserFcmController: controller.NewUserFcmController(
-			userFcmService,
+			userFcmDomain,
 		),
 		LogMessageController: controller.NewLogMessageController(
-			logMessageService,
+			logMessageDomain,
 		),
 	},
 		srv.cfg,

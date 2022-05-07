@@ -2,7 +2,7 @@ package logger
 
 import (
 	"context"
-	"getcare-notification/constant/config"
+	"getcare-notification/config"
 	"os"
 	"time"
 

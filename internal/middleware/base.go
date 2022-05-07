@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"getcare-notification/internal/service"
 	"getcare-notification/utils"
 	"io/ioutil"
 	"log"
@@ -41,7 +40,7 @@ func Log(ctx *gin.Context) {
 	bodyStr := string(bodyBytes)
 	paramStr := string(paramJson)
 
-	log.Println(fmt.Sprintf("[%s] %s %s %s %s \"%s\" %s \n%s",
+	log.Printf("[%s] %s %s %s %s \"%s\" %s \n%s",
 		clientIP,
 		method,
 		fullPath,
@@ -50,8 +49,8 @@ func Log(ctx *gin.Context) {
 		userAgent,
 		paramStr,
 		bodyStr,
-	))
+	)
 
-	logID := service.GeneratorString(32)
+	logID := utils.GeneratorString(32)
 	ctx.Set(utils.REQUEST_LOG_ID, logID)
 }

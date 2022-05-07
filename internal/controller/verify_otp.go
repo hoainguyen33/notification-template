@@ -2,8 +2,8 @@ package controller
 
 import (
 	"getcare-notification/constant/errors"
+	"getcare-notification/internal/domain"
 	"getcare-notification/internal/model"
-	"getcare-notification/internal/service"
 	"getcare-notification/utils"
 
 	"github.com/gin-gonic/gin"
@@ -18,12 +18,12 @@ type VerifyOtpController interface {
 }
 
 type verifyOtpController struct {
-	Service service.VerifyOtpService
+	VerifyOtpDomain domain.VerifyOtpDomain
 }
 
-func NewVerifyOtpController(verifyOtpService service.VerifyOtpService) VerifyOtpController {
+func NewVerifyOtpController(verifyOtpDomain domain.VerifyOtpDomain) VerifyOtpController {
 	return &verifyOtpController{
-		Service: verifyOtpService,
+		VerifyOtpDomain: verifyOtpDomain,
 	}
 }
 
@@ -37,19 +37,17 @@ func (vo *verifyOtpController) List(ctx *gin.Context) {
 		utils.ReturnError(w, err)
 		return
 	}
+	where := (&utils.Where{}).FromMap(utils.WhereMap{
+		"name": utils.WT("string", "LIKE"),
+	}).LoadData(r)
 
-	where := map[string]interface{}{
-		"name": r.FormValue("name"),
-	}
-	utils.WhereTrim(where)
-
-	records, totalRows, err := vo.Service.List(page, pageSize, order, where)
+	records, total, err := vo.VerifyOtpDomain.List(page, pageSize, order, where)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
 	}
 
-	result := &utils.PagedResults{Result: true, Page: page, PageSize: pageSize, Data: records, TotalRecords: totalRows}
+	result := &utils.PagedResults{Result: true, Page: page, PageSize: pageSize, Data: records, TotalRecords: total}
 	utils.WriteJSON(ctx, result)
 }
 
@@ -68,7 +66,7 @@ func (vo *verifyOtpController) Get(ctx *gin.Context) {
 		return
 	}
 
-	record, err := vo.Service.Get(argId)
+	record, err := vo.VerifyOtpDomain.Get(argId)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
@@ -90,13 +88,13 @@ func (vo *verifyOtpController) Create(ctx *gin.Context) {
 	}
 
 	// if err := verifyotp.BeforeSave(); err != nil {
-	// 	service.ReturnError(w, r, repository.ErrBadParams)
+	// 	Domain.ReturnError(w, r, repository.ErrBadParams)
 	// }
 
 	// verifyotp.Prepare()
 
 	// if err := verifyotp.Validate(model.Create); err != nil {
-	// 	service.ReturnError(w, r, repository.ErrBadParams)
+	// 	Domain.ReturnError(w, r, repository.ErrBadParams)
 	// 	return
 	// }
 
@@ -106,7 +104,7 @@ func (vo *verifyOtpController) Create(ctx *gin.Context) {
 	}
 
 	var err error
-	verifyotp, _, err = vo.Service.Create(verifyotp)
+	verifyotp, err = vo.VerifyOtpDomain.Create(verifyotp)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
@@ -133,13 +131,13 @@ func (vo *verifyOtpController) Update(ctx *gin.Context) {
 	}
 
 	// if err := verifyotp.BeforeSave(); err != nil {
-	// 	service.ReturnError(w, r, repository.ErrBadParams)
+	// 	Domain.ReturnError(w, r, repository.ErrBadParams)
 	// }
 
 	// verifyotp.Prepare()
 
 	// if err := verifyotp.Validate(model.Update); err != nil {
-	// 	service.ReturnError(w, r, repository.ErrBadParams)
+	// 	Domain.ReturnError(w, r, repository.ErrBadParams)
 	// 	return
 	// }
 
@@ -148,7 +146,7 @@ func (vo *verifyOtpController) Update(ctx *gin.Context) {
 		return
 	}
 
-	verifyotp, _, err = vo.Service.Update(
+	verifyotp, err = vo.VerifyOtpDomain.Update(
 		argId,
 		verifyotp)
 	if err != nil {
@@ -175,12 +173,12 @@ func (vo *verifyOtpController) Delete(ctx *gin.Context) {
 		return
 	}
 
-	rowsAffected, err := vo.Service.Delete(argId)
+	err = vo.VerifyOtpDomain.Delete(argId)
 	if err != nil {
 		utils.ReturnError(w, err)
 		return
 	}
 
-	result := &utils.PagedResult{Result: true, Data: rowsAffected}
+	result := &utils.PagedResult{Result: true, Data: argId}
 	utils.WriteJSON(ctx, result)
 }

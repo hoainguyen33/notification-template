@@ -1,7 +1,7 @@
 package jaeger
 
 import (
-	"getcare-notification/constant/config"
+	"getcare-notification/config"
 	"io"
 
 	"github.com/opentracing/opentracing-go"

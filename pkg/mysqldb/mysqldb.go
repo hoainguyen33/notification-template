@@ -1,7 +1,7 @@
 package mysqldb
 
 import (
-	"getcare-notification/constant/config"
+	"getcare-notification/config"
 	"log"
 	"os"
 	"time"

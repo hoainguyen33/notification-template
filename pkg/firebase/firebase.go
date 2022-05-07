@@ -2,7 +2,7 @@ package firebase
 
 import (
 	"context"
-	"getcare-notification/constant/config"
+	"getcare-notification/config"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"

@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"getcare-notification/constant/config"
+	"getcare-notification/config"
 	"time"
 
 	"github.com/go-redis/redis/v8"

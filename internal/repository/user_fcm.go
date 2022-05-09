@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"strings"
 
 	"getcare-notification/internal/model"
 	"getcare-notification/utils"
@@ -14,12 +15,15 @@ type UserFcmRepository interface {
 	Get(argId int32) (*model.UserFcm, error)
 	GetByUserId(userID string) ([]*model.UserFcm, error)
 	GetBySystemId(systemId string) ([]string, error)
+	GetTokenByUserIds(userIds []string) ([]string, error)
 	GetBySystemIdNotUserId(systemId string, userId string) ([]string, error)
+	GetTokenByUserId(userID string) ([]string, error)
 	Create(userFcmAdd *model.UserFcmAdd) (result *model.UserFcm, err error)
 	CreateByUser(userFcmAdd *model.UserFcmAdd) (*model.UserFcm, error)
 	CreateByDevice(userFcmAdd *model.UserFcmAdd) (*model.UserFcm, error)
 	Update(argId int32, updated *model.UserFcm) (*model.UserFcm, error)
 	Delete(argId int32) error
+	MapToTokens(userFcms []*model.UserFcm) []string
 	Begin() *gorm.DB
 }
 
@@ -137,12 +141,32 @@ func (uf *userFcmRepository) GetByUserId(userID string) ([]*model.UserFcm, error
 	return records, nil
 }
 
+func (uf *userFcmRepository) GetTokenByUserId(userID string) ([]string, error) {
+	records := []string{}
+	selects := "user_fcm.token"
+	where := fmt.Sprintf("user_id='%s'", userID)
+	if err := uf.Table.Model(&model.UserFcm{}).Select(selects).Where(where).Find(&records).Error; err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
 func (uf *userFcmRepository) GetBySystemId(systemId string) ([]string, error) {
 	records := []string{}
 	selects := "user_fcm.token"
 	from := "system_user LEFT JOIN user_fcm ON system_user.user_id COLLATE utf8mb4_unicode_ci = user_fcm.user_id"
 	where := fmt.Sprintf("system_user.system_id='%s'", systemId)
 	if err := uf.Table.Table(from).Select(selects).Where(where).Find(&records).Error; err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+
+func (uf *userFcmRepository) GetTokenByUserIds(userIds []string) ([]string, error) {
+	records := []string{}
+	selects := "user_fcm.token"
+	where := fmt.Sprintf("user_id IN (\"%s\")", strings.Join(userIds, "\",\""))
+	if err := uf.Table.Model(&model.UserFcm{}).Select(selects).Where(where).Find(&records).Error; err != nil {
 		return nil, err
 	}
 	return records, nil
@@ -157,6 +181,14 @@ func (uf *userFcmRepository) GetBySystemIdNotUserId(systemId string, userId stri
 		return nil, err
 	}
 	return records, nil
+}
+
+func (uf *userFcmRepository) MapToTokens(userFcms []*model.UserFcm) []string {
+	result := []string{}
+	for _, uf := range userFcms {
+		result = append(result, uf.Token)
+	}
+	return result
 }
 
 func (uf *userFcmRepository) Begin() *gorm.DB {

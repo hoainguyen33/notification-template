@@ -1,20 +1,5 @@
 package model
 
-import (
-	"database/sql"
-	"time"
-
-	"github.com/guregu/null"
-	uuid "github.com/satori/go.uuid"
-)
-
-var (
-	_ = time.Second
-	_ = sql.LevelDefault
-	_ = null.Bool{}
-	_ = uuid.UUID{}
-)
-
 // Migrations struct is a row record of the migrations table in the getcare-dev database
 type Migrations struct {
 	//[ 0] id                                             int                  null: false  primary: true   isArray: false  auto: true   col: int             len: -1      default: []

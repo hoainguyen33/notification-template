@@ -1,7 +1,7 @@
 package kafka
 
 import (
-	"getcare-notification/constant"
+	"getcare-notification/common"
 	"getcare-notification/pkg/logger"
 
 	"github.com/go-playground/validator/v10"
@@ -36,17 +36,17 @@ func (kg *KafkaGroup) NewReader(kafkaURLs []string, topic, groupID string) *kafk
 		Brokers:       kafkaURLs,
 		Topic:         topic,
 		GroupID:       groupID,
-		MinBytes:      constant.MinBytes,
-		MaxBytes:      constant.MaxBytes,
-		QueueCapacity: constant.QueueCapacity,
+		MinBytes:      common.MinBytes,
+		MaxBytes:      common.MaxBytes,
+		QueueCapacity: common.QueueCapacity,
 		Logger:        kafka.LoggerFunc(kg.Log.Debugf),
 		ErrorLogger:   kafka.LoggerFunc(kg.Log.Errorf),
-		MaxAttempts:   constant.MaxAttempts,
+		MaxAttempts:   common.MaxAttempts,
 		Dialer: &kafka.Dialer{
-			Timeout: constant.DialTimeout,
+			Timeout: common.DialTimeout,
 		},
-		Partition:      constant.PartitionNotification,
-		CommitInterval: constant.CommitInterval,
+		Partition:      common.PartitionNotification,
+		CommitInterval: common.CommitInterval,
 	})
 }
 
@@ -56,14 +56,14 @@ func (kg *KafkaGroup) NewWriter(topic string) *kafka.Writer {
 		Topic:        topic,
 		Balancer:     &kafka.LeastBytes{},
 		RequiredAcks: kafka.RequireNone,
-		MaxAttempts:  constant.WriterMaxAttempts,
+		MaxAttempts:  common.WriterMaxAttempts,
 		Logger:       kafka.LoggerFunc(kg.Log.Debugf),
 		ErrorLogger:  kafka.LoggerFunc(kg.Log.Errorf),
 		// Compression:  compress.Snappy,
-		ReadTimeout:  constant.WriterReadTimeout,
-		WriteTimeout: constant.WriterWriteTimeout,
-		BatchSize:    constant.BatchSize,
-		BatchTimeout: constant.BatchTimeout,
+		ReadTimeout:  common.WriterReadTimeout,
+		WriteTimeout: common.WriterWriteTimeout,
+		BatchSize:    common.BatchSize,
+		BatchTimeout: common.BatchTimeout,
 	}
 }
 

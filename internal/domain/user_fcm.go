@@ -1,10 +1,10 @@
 package domain
 
 import (
+	"getcare-notification/internal/delivery/firebase"
 	"getcare-notification/internal/model"
 	"getcare-notification/internal/repository"
 	"getcare-notification/utils"
-	"os"
 )
 
 type UserFcmDomain interface {
@@ -13,16 +13,20 @@ type UserFcmDomain interface {
 	Create(record *model.UserFcmAdd) (*model.UserFcm, error)
 	Update(argId int32, updated *model.UserFcm) (*model.UserFcm, error)
 	Delete(argId int32) error
-	Push(userID string, title string, body string, data interface{}) error
+	// Push(userID string, title string, body string, data interface{}) error
+	PushUser(mu *model.MessageUser) error
+	PushUsers(mu *model.MessageUsers) error
 }
 
 type userFcmDomain struct {
 	UserFcmRepository repository.UserFcmRepository
+	Firebase          *firebase.Firebase
 }
 
-func NewUserFcmDomain(userFcmRepository repository.UserFcmRepository) UserFcmDomain {
+func NewUserFcmDomain(userFcmRepository repository.UserFcmRepository, firebase *firebase.Firebase) UserFcmDomain {
 	return &userFcmDomain{
 		UserFcmRepository: userFcmRepository,
+		Firebase:          firebase,
 	}
 }
 
@@ -52,30 +56,48 @@ func (uf *userFcmDomain) Delete(argId int32) error {
 	return uf.UserFcmRepository.Delete(argId)
 }
 
-// cần hỏi
+// // cần hỏi
 
-func (uf *userFcmDomain) Push(userID string, title string, body string, data interface{}) error {
-	records, err := uf.UserFcmRepository.GetByUserId(userID)
+// func (uf *userFcmDomain) Push(userID string, title string, body string, data interface{}) error {
+// 	records, err := uf.UserFcmRepository.GetByUserId(userID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	for _, record := range records {
+// 		fcmPayload := &model.FcmPayload{
+// 			To:       record.Token,
+// 			Priority: "HIGH",
+// 			Notification: model.FcmNotificationPayload{
+// 				Title: title,
+// 				Body:  body,
+// 				Image: os.Getenv("URL_CDN") + os.Getenv("PATH_LOGO"),
+// 			},
+// 			Data: data,
+// 		}
+// 		FcmSend(fcmPayload)
+// 	}
+
+// 	return nil
+// }
+
+func (uf *userFcmDomain) PushUser(mu *model.MessageUser) error {
+	records, err := uf.UserFcmRepository.GetTokenByUserId(mu.UserID)
 	if err != nil {
 		return err
 	}
-	for _, record := range records {
-		fcmPayload := &model.FcmPayload{
-			To:       record.Token,
-			Priority: "HIGH",
-			Notification: model.FcmNotificationPayload{
-				Title: title,
-				Body:  body,
-				Image: os.Getenv("URL_CDN") + os.Getenv("PATH_LOGO"),
-			},
-			Data: data,
-		}
-		FcmSend(fcmPayload)
-	}
-
+	uf.Firebase.SendMulticastMessage(records, mu.Data)
 	return nil
 }
 
-func FcmSend(data interface{}) interface{} {
-	return FcmSendPostWithHeader(os.Getenv("FCM_URL_API")+"/send", data)
+func (uf *userFcmDomain) PushUsers(mu *model.MessageUsers) error {
+	records, err := uf.UserFcmRepository.GetTokenByUserIds(mu.UserIDs)
+	if err != nil {
+		return err
+	}
+	uf.Firebase.SendMulticastMessage(records, mu.Data)
+	return nil
 }
+
+// func FcmSend(data interface{}) interface{} {
+// 	return FcmSendPostWithHeader(os.Getenv("FCM_URL_API")+"/send", data)
+// }

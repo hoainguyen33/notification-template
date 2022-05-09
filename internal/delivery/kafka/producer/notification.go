@@ -2,7 +2,7 @@ package producer
 
 import (
 	"context"
-	"getcare-notification/constant/topics"
+	"getcare-notification/common/topics"
 	"getcare-notification/pkg/logger"
 
 	kafkaG "getcare-notification/internal/delivery/kafka"

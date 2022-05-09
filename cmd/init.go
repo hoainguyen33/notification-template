@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"getcare-notification/common"
+	"getcare-notification/common/flags"
 	"getcare-notification/config"
-	"getcare-notification/constant"
 	"getcare-notification/internal/controller"
+	firebaseSrv "getcare-notification/internal/delivery/firebase"
 	kafkaGroup "getcare-notification/internal/delivery/kafka"
 	"getcare-notification/internal/delivery/route"
 	"getcare-notification/internal/domain"
@@ -25,8 +27,23 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/opentracing/opentracing-go"
 	"github.com/segmentio/kafka-go"
+	"github.com/urfave/cli"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
+)
+
+var (
+	app          = NewApp()
+	server       = new(Srv)
+	startCommand = cli.Command{
+		Action:      flags.MigrateFlags(Start),
+		Name:        "start",
+		Usage:       "start server",
+		ArgsUsage:   "<genesisPath>",
+		Flags:       []cli.Flag{},
+		Description: `start server`,
+		//SkipFlagParsing: true,
+	}
 )
 
 type Srv struct {
@@ -42,132 +59,177 @@ type Srv struct {
 	Routes   route.Routes
 }
 
-var srv = &Srv{}
-
 func init() {
-	log.Println("init application")
-	// load env in localhost
-	srv.LoadEnv()
-	os.Setenv("TZ", "Asia/Ho_Chi_Minh")
-	// config srv
-	cfg, err := config.ParseConfig()
-	if err != nil {
-		log.Fatal(err)
+	app.Action = cli.ShowAppHelp
+	app.Commands = []cli.Command{
+		startCommand,
 	}
-	srv.cfg = cfg
+	app.Flags = []cli.Flag{
+		flags.HttpHostFlag,
+		flags.HttpPortFlag,
+		flags.ServerNameFlag,
+		flags.ServerVersionFlag,
+
+		flags.MongoDatabaseNameFlag,
+		flags.MongoURIFlag,
+
+		flags.StorageAccessKeyFlag,
+		flags.StorageSecretKeyFlag,
+		flags.StorageRegionFlag,
+		flags.StorageNameFlag,
+
+		flags.JaegerHostFlag,
+		flags.JaegerPortFlag,
+	}
 }
 
-func (srv *Srv) LoadEnv() {
+// NewApp creates an app with sane defaults.
+func NewApp() *cli.App {
+	app := cli.NewApp()
+	app.Action = cli.ShowAppHelp
+	app.Name = "Getcare Notification"
+	app.Author = "Getcare"
+	app.Email = "getcare@getcare.com"
+	app.Usage = "Server Notification API"
+	return app
+}
+
+// Start ...
+func Start(ctx *cli.Context) error {
+	server.Start(ctx)
+	return nil
+}
+
+func (server *Srv) Start(cli *cli.Context) {
+	// load env in localhost
+	server.LoadEnv()
+	// load config
+	server.LoadConfig(cli)
+	// config log
+	server.Logger()
+	// config tracer
+	closer := server.Tracer()
+	defer closer.Close()
+	// connect kafka
+	server.Kafka()
+	// connect mysql
+	server.Mysql()
+	mysqlDB, _ := server.mysqlDB.DB()
+	defer mysqlDB.Close()
+	// connect mongodb
+	ctx := server.MongoDB()
+	defer server.mongoDB.Client().Disconnect(ctx)
+	// create validate
+	server.Validate()
+	// connect firebase
+	server.Firebase()
+	// config route
+	server.configRoute()
+	// run server
+	log.Fatal(server.Routes.Run())
+}
+
+func (server *Srv) LoadEnv() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
+	os.Setenv("TZ", "Asia/Ho_Chi_Minh")
 }
 
-func (srv *Srv) Start() {
-	// config log
-	srv.Logger()
-	// config tracer
-	closer := srv.Tracer()
-	defer closer.Close()
-	// connect kafka
-	srv.Kafka()
-	// connect mysql
-	srv.Mysql()
-	mysqlDB, _ := srv.mysqlDB.DB()
-	defer mysqlDB.Close()
-	// connect mongodb
-	ctx := srv.MongoDB()
-	defer srv.mongoDB.Client().Disconnect(ctx)
-	// create validate
-	srv.Validate()
-	// connect firebase
-	srv.Firebase()
-	// config route
-	srv.configRoute()
-	// run server
-	log.Fatal(srv.Routes.Run())
-}
-
-func (srv *Srv) MongoDB() context.Context {
-	ctx := context.Background()
-	conn, err := mongodb.New(ctx, srv.cfg)
+func (src *Srv) LoadConfig(ctx *cli.Context) {
+	cfg, err := config.New()
 	if err != nil {
-		srv.logger.Fatal("mongodb.New", err)
+		log.Fatal(err)
 	}
-	srv.mongoDB = conn
-	srv.logger.Infof("MongoDB connected: %v", srv.cfg.MongoDB.URI)
+	// config flags
+	config.GetFlags(cfg.Http, ctx,
+		flags.HttpHostFlag.GetName(),
+	)
+	server.cfg = cfg
+}
+
+func (server *Srv) MongoDB() context.Context {
+	ctx := context.Background()
+	conn, err := mongodb.New(ctx, server.cfg)
+	if err != nil {
+		server.logger.Fatal("mongodb.New: ", err)
+	}
+	server.mongoDB = conn
+	server.logger.Infof("MongoDB connected: %v", server.cfg.MongoDB.URI)
 	return ctx
 }
 
-func (srv *Srv) Mysql() {
-	mysql, err := mysqldb.New(srv.cfg)
+func (server *Srv) Mysql() {
+	mysql, err := mysqldb.New(server.cfg)
 	if err != nil {
-		srv.logger.Fatal("mysqldb.New", err)
+		server.logger.Fatal("mysqldb.New: ", err)
 	}
-	srv.mysqlDB = mysql
-	srv.logger.Infof("MysqlDB connected: %s:%s", srv.cfg.MysqlDB.Host, srv.cfg.MysqlDB.Port)
+	server.mysqlDB = mysql
+	server.logger.Infof("MysqlDB connected: %s:%s", server.cfg.MysqlDB.Host, server.cfg.MysqlDB.Port)
 }
 
-func (srv *Srv) Logger() {
-	logger := logger.New(srv.cfg)
+func (server *Srv) Logger() {
+	logger := logger.New(server.cfg)
 	logger.Init()
 	logger.Infof(
 		"AppVersion: %s, LogLevel: %s, DevelopmentMode: %s",
-		srv.cfg.AppVersion,
-		srv.cfg.Logger.Level,
-		srv.cfg.Grpc.Development,
+		server.cfg.AppVersion,
+		server.cfg.Logger.Level,
+		server.cfg.Grpc.Development,
 	)
-	srv.logger = logger
+	server.logger = logger
 }
 
-func (srv *Srv) Tracer() io.Closer {
-	tracer, closer, err := jaeger.New(srv.cfg)
+func (server *Srv) Tracer() io.Closer {
+	tracer, closer, err := jaeger.New(server.cfg)
 	if err != nil {
-		srv.logger.Fatal("jaeger.New", err)
+		server.logger.Fatal("jaeger.New: ", err)
 		return closer
 	}
-	srv.tracer = tracer
-	opentracing.SetGlobalTracer(srv.tracer)
-	srv.logger.Info("Opentracing connected")
+	server.tracer = tracer
+	opentracing.SetGlobalTracer(server.tracer)
+	server.logger.Info("Opentracing connected")
 	return closer
 }
 
-func (srv *Srv) Kafka() {
-	conn, err := kafkaSrv.New(srv.cfg)
+func (server *Srv) Kafka() {
+	conn, err := kafkaSrv.New(server.cfg)
 	if err != nil {
-		srv.logger.Fatal("NewKafkaConn", err)
+		server.logger.Fatal("NewKafkaConn: ", err)
 	}
-	srv.kafka = conn
+	server.kafka = conn
 	brokers, err := conn.Brokers()
 	if err != nil {
-		srv.logger.Fatal("conn.Brokers", err)
+		server.logger.Fatal("conn.Brokers: ", err)
 	}
-	srv.logger.Infof("Kafka connected: %v", brokers)
+	server.logger.Infof("Kafka connected: %v", brokers)
 }
 
-func (srv *Srv) Validate() {
-	srv.validate = validator.New()
-	srv.logger.Infof("Validate created")
+func (server *Srv) Validate() {
+	server.validate = validator.New()
+	server.logger.Infof("Validate created")
 }
 
-func (srv *Srv) Firebase() {
-	client, err := firebase.Init(srv.cfg)
+func (server *Srv) Firebase() {
+	client, err := firebase.Init(server.cfg)
 	if err != nil {
-		srv.logger.Fatal("firebase.Init", err)
+		server.logger.Fatal("firebase.Init: ", err)
 	}
-	srv.firebase = client
-	srv.logger.Infof("Firebase ProjectID: %v", srv.cfg.Firebase.ProjectID)
+	server.firebase = client
+	server.logger.Infof("Firebase ProjectID: %v", server.cfg.Firebase.ProjectID)
 }
 
-func (srv *Srv) configRoute() {
-	userFcmRepository := repository.NewUserFcmRepository(srv.mysqlDB)
-	requestOtpRepository := repository.NewRequestOtpRepository(srv.mysqlDB)
-	verifyOtpRepository := repository.NewVerifyOtpRepository(srv.mysqlDB)
-	logMessageRepository := repository.NewLogMessageRepository(srv.mongoDB)
-	userFcmDomain := domain.NewUserFcmDomain(userFcmRepository)
+func (server *Srv) configRoute() {
+	userFcmRepository := repository.NewUserFcmRepository(server.mysqlDB)
+	requestOtpRepository := repository.NewRequestOtpRepository(server.mysqlDB)
+	verifyOtpRepository := repository.NewVerifyOtpRepository(server.mysqlDB)
+	logMessageRepository := repository.NewLogMessageRepository(server.mongoDB)
+	userFcmDomain := domain.NewUserFcmDomain(userFcmRepository, &firebaseSrv.Firebase{
+		Client: server.firebase,
+	})
 	logMessageDomain := domain.NewLogMessageDomain(logMessageRepository)
-	srv.Routes = route.NewRoute(kafkaGroup.NewKafkaGroup(srv.cfg.Kafka.Brokers,
-		constant.NotificationGroupId, srv.logger, srv.validate), gin.Default(), &controller.Controller{
+	server.Routes = route.NewRoute(kafkaGroup.NewKafkaGroup(server.cfg.Kafka.Brokers,
+		common.NotificationGroupId, server.logger, server.validate), gin.Default(), &controller.Controller{
 		RequestOtpController: controller.NewRequestOtpController(
 			domain.NewRequestOtpDomain(
 				requestOtpRepository,
@@ -186,8 +248,8 @@ func (srv *Srv) configRoute() {
 			logMessageDomain,
 		),
 	},
-		srv.cfg,
-		srv.logger,
-		srv.validate,
+		server.cfg,
+		server.logger,
+		server.validate,
 	)
 }

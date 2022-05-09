@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"getcare-notification/constant/errors"
+	"getcare-notification/common/errors"
 	"getcare-notification/internal/domain"
 	"getcare-notification/internal/model"
 	"getcare-notification/utils"

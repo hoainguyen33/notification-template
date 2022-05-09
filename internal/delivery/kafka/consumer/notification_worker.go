@@ -3,7 +3,7 @@ package consumer
 import (
 	"context"
 	"encoding/json"
-	"getcare-notification/constant"
+	"getcare-notification/common"
 	"getcare-notification/internal/model"
 	"sync"
 
@@ -30,17 +30,17 @@ func (nc *notificationConsumer) NotificationWorker(
 			return
 		}
 		nc.Kafka.LogInfo(workerID, m)
-		constant.IncomingMessages.Inc()
+		common.IncomingMessages.Inc()
 
 		var km model.KafkaMessage
 		if err := json.Unmarshal(m.Value, &km); err != nil {
-			constant.ErrorMessages.Inc()
+			common.ErrorMessages.Inc()
 			nc.Kafka.Log.Errorf("json.Unmarshal", err)
 			continue
 		}
 		// validate struct
 		// if err := nc.Kafka.Validate.StructCtx(ctx, tma); err != nil {
-		// 	constant.ErrorMessages.Inc()
+		// 	common.ErrorMessages.Inc()
 		// 	nc.Kafka.Log.Errorf("validate.StructCtx", err)
 		// 	continue
 		// }
@@ -50,12 +50,12 @@ func (nc *notificationConsumer) NotificationWorker(
 			return do(&km)
 		},
 			// retry options
-			retry.Attempts(constant.RetryAttempts),
-			retry.Delay(constant.RetryDelay),
+			retry.Attempts(common.RetryAttempts),
+			retry.Delay(common.RetryDelay),
 			retry.Context(ctx),
 		); err != nil {
 			// error do
-			constant.ErrorMessages.Inc()
+			common.ErrorMessages.Inc()
 			if err := nc.publishErrorNotification(ctx, w, m, err); err != nil {
 				nc.Kafka.Log.Errorf("publishErrorNotification", err)
 				continue
@@ -64,12 +64,12 @@ func (nc *notificationConsumer) NotificationWorker(
 			continue
 		}
 		if err := r.CommitMessages(ctx, m); err != nil {
-			constant.ErrorMessages.Inc()
+			common.ErrorMessages.Inc()
 			nc.Kafka.Log.Errorf("CommitMessages", err)
 			continue
 		}
 		nc.Kafka.Log.Infof("message: %v", km)
-		constant.SuccessMessages.Inc()
+		common.SuccessMessages.Inc()
 	}
 }
 

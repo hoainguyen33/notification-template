@@ -2,8 +2,8 @@ package consumer
 
 import (
 	"context"
-	"getcare-notification/constant"
-	"getcare-notification/constant/topics"
+	"getcare-notification/common"
+	"getcare-notification/common/topics"
 	"getcare-notification/internal/delivery/kafka"
 	"sync"
 )
@@ -22,7 +22,7 @@ func NewNotificationConsumer(kafka *kafka.KafkaGroup) NotificationConsumer {
 	}
 }
 
-func (nc *notificationConsumer) consumeMessage(
+func (nc *notificationConsumer) consumeNotification(
 	ctx context.Context,
 	cancel context.CancelFunc,
 	groupID string,
@@ -58,5 +58,5 @@ func (nc *notificationConsumer) consumeMessage(
 // RunConsumers run kafka consumers
 func (nc *notificationConsumer) Run(ctx context.Context, cancel context.CancelFunc,
 	doMessage DoFunc) {
-	go nc.consumeMessage(ctx, cancel, constant.NotificationGroupId, topics.NotificationConsumer, constant.NotificationWorker, doMessage)
+	go nc.consumeNotification(ctx, cancel, common.NotificationGroupId, topics.NotificationConsumer, common.NotificationWorker, doMessage)
 }

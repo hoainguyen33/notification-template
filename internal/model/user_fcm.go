@@ -1,18 +1,7 @@
 package model
 
 import (
-	"database/sql"
 	"time"
-
-	"github.com/guregu/null"
-	uuid "github.com/satori/go.uuid"
-)
-
-var (
-	_ = time.Second
-	_ = sql.LevelDefault
-	_ = null.Bool{}
-	_ = uuid.UUID{}
 )
 
 // UserFcm struct is a row record of the getcare_user_fcm table in the getcare-dev database

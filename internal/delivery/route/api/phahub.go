@@ -57,7 +57,7 @@ func PhahubAPI(address string, r *gin.Engine, apiRoutes *gin.RouterGroup, c *con
 	apiRoutes.OPTIONS("/notification", Options, middleware.Cors())
 	notificationRoutes := apiRoutes.Group("/notification", middleware.Base(), middleware.Cors())
 	{
-		notificationRoutes.POST("/push", c.UserFcmController.PushUserFcm)
+		notificationRoutes.POST("/push", c.UserFcmController.Push)
 	}
 	return r.Run(address)
 }

@@ -16,11 +16,10 @@ type KafkaErrorMessage struct {
 }
 
 type KafkaMessage struct {
-	UserId string      `json:"user_id"`
-	Key    []byte      `json:"key"`
-	Msg    interface{} `json:"msg"`
+	Event string      `json:"event"`
+	Msg   interface{} `json:"msg"`
 }
 
 func (kmsg *KafkaMessage) String() string {
-	return fmt.Sprintf("user_id: %v, msg: %v", kmsg.UserId, kmsg.Msg)
+	return fmt.Sprintf("event: %v, msg: %v", kmsg.Event, kmsg.Msg)
 }

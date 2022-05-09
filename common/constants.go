@@ -1,4 +1,4 @@
-package constant
+package common
 
 const OneMinute = 60
 const OneHour = 60 * OneMinute
@@ -11,12 +11,12 @@ const Approval = 1
 const Deapproval = -1
 
 const (
-	CustomerTypePharmacy = 1
-	CustomerTypeVendor = 1
-	CustomerTypeRetailCustomer = 2
-	CustomerTypeDoctor = 3
+	CustomerTypePharmacy        = 1
+	CustomerTypeVendor          = 1
+	CustomerTypeRetailCustomer  = 2
+	CustomerTypeDoctor          = 3
 	CustomerTypeMedicalFacility = 4
-	CustomerTypeCollaborator   = 5
+	CustomerTypeCollaborator    = 5
 )
 
 const IDErpGroupCustomerAll = 1

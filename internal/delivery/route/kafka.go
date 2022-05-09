@@ -3,7 +3,6 @@ package route
 import (
 	"getcare-notification/internal/delivery/kafka/consumer"
 	"getcare-notification/internal/delivery/kafka/producer"
-	"getcare-notification/internal/model"
 )
 
 type Closer func()
@@ -12,7 +11,7 @@ func (r *route) RunKafka() Closer {
 	consumers := consumer.NewConsumers(
 		consumer.NewNotificationConsumer(r.KafkaGroup),
 		&consumer.DoConsumers{
-			DoNotification: func(kmsg *model.KafkaMessage) error { return nil },
+			DoNotification: r.Controller.UserFcmController.KafkaPush,
 		},
 	)
 	go consumers.Run()

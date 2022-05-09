@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"getcare-notification/constant/errors"
+	"getcare-notification/common/errors"
 	"getcare-notification/internal/domain"
 	"getcare-notification/internal/model"
 	"getcare-notification/utils"
@@ -16,8 +16,8 @@ type UserFcmController interface {
 	Create(ctx *gin.Context)
 	Update(ctx *gin.Context)
 	Delete(ctx *gin.Context)
-	PushUserFcm(ctx *gin.Context)
-	Push(userID string, title string, body string, data interface{}) error
+	Push(ctx *gin.Context)
+	KafkaPush(msg *model.KafkaMessage) error
 }
 
 type userFcmController struct {
@@ -119,26 +119,30 @@ func (uf *userFcmController) Delete(ctx *gin.Context) {
 	utils.WriteJSON(ctx, result)
 }
 
-func (uf *userFcmController) PushUserFcm(ctx *gin.Context) {
+func (uf *userFcmController) Push(ctx *gin.Context) {
 	r := ctx.Request
 	w := ctx.Writer
-
-	pushUserFcm := &model.PushUserFcm{}
-	if err := utils.ReadJSON(r, pushUserFcm); err != nil {
+	msg := &model.KafkaMessage{}
+	if err := utils.ReadJSON(r, msg); err != nil {
 		utils.ReturnError(w, errors.ErrBadParams)
 		return
 	}
-
-	err := uf.UserFcmDomain.Push(pushUserFcm.UserID, pushUserFcm.Title, pushUserFcm.Body, pushUserFcm.Data)
-	if err != nil {
-		utils.ReturnError(w, err)
+	if err := uf.KafkaPush(msg); err != nil {
+		utils.ReturnError(w, errors.ErrBadParams)
 		return
 	}
-
 	result := &utils.PagedResult{Result: true}
 	utils.WriteJSON(ctx, result)
 }
 
-func (uf *userFcmController) Push(userID string, title string, body string, data interface{}) error {
-	return uf.UserFcmDomain.Push(userID, title, body, data)
+func (uf *userFcmController) KafkaPush(msg *model.KafkaMessage) error {
+	switch msg.Event {
+	case "push/user":
+		data := msg.Msg.(model.MessageUser)
+		return uf.UserFcmDomain.PushUser(&data)
+	case "push/users":
+		data := msg.Msg.(model.MessageUsers)
+		return uf.UserFcmDomain.PushUsers(&data)
+	}
+	return nil
 }

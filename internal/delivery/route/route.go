@@ -8,6 +8,7 @@ import (
 	"getcare-notification/internal/controller"
 	grpcClient "getcare-notification/internal/delivery/grpc_client"
 	"getcare-notification/internal/delivery/kafka"
+	"getcare-notification/internal/delivery/kafka/producer"
 	"getcare-notification/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,7 @@ type route struct {
 	KafkaGroup  *kafka.KafkaGroup
 	ApiGin      *gin.Engine
 	Controller  *controller.Controller
+	producer    *producer.Producers
 }
 
 func NewRoute(

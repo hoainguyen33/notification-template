@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"getcare-notification/common/errors"
 	"getcare-notification/internal/domain"
 	"getcare-notification/internal/model"
@@ -8,6 +11,7 @@ import (
 
 	"github.com/Nerzal/gocloak/v10"
 	"github.com/gin-gonic/gin"
+	"github.com/segmentio/kafka-go"
 )
 
 type UserFcmController interface {
@@ -18,6 +22,7 @@ type UserFcmController interface {
 	Delete(ctx *gin.Context)
 	Push(ctx *gin.Context)
 	KafkaPush(msg *model.KafkaMessage) error
+	TestKafka(do func(ctx context.Context, msgs ...kafka.Message) error) func(ctx *gin.Context)
 }
 
 type userFcmController struct {
@@ -122,17 +127,47 @@ func (uf *userFcmController) Delete(ctx *gin.Context) {
 func (uf *userFcmController) Push(ctx *gin.Context) {
 	r := ctx.Request
 	w := ctx.Writer
-	msg := &model.KafkaMessage{}
+	msg := &model.KafkaMessageUser{}
 	if err := utils.ReadJSON(r, msg); err != nil {
 		utils.ReturnError(w, errors.ErrBadParams)
 		return
 	}
-	if err := uf.KafkaPush(msg); err != nil {
+	if err := uf.UserFcmDomain.PushUser(msg.Msg); err != nil {
 		utils.ReturnError(w, errors.ErrBadParams)
 		return
 	}
 	result := &utils.PagedResult{Result: true}
 	utils.WriteJSON(ctx, result)
+}
+
+func (uf *userFcmController) TestKafka(do func(ctx context.Context, msgs ...kafka.Message) error) func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
+		r := ctx.Request
+		w := ctx.Writer
+		msg := &model.KafkaMessageTest{}
+		fmt.Println(1)
+		if err := utils.ReadJSON(r, msg); err != nil {
+			utils.ReturnError(w, errors.ErrBadParams)
+			return
+		}
+		fmt.Println(1)
+		kmsgBytes, err := json.Marshal(msg)
+		if err != nil {
+			utils.ReturnError(w, errors.ErrBadParams)
+			return
+		}
+		fmt.Println(6)
+		if err := do(context.Background(), kafka.Message{
+			Value: kmsgBytes,
+		}); err != nil {
+			fmt.Println(2)
+			utils.ReturnError(w, errors.ErrBadParams)
+			return
+		}
+		fmt.Println(err, 4)
+		result := &utils.PagedResult{Result: true}
+		utils.WriteJSON(ctx, result)
+	}
 }
 
 func (uf *userFcmController) KafkaPush(msg *model.KafkaMessage) error {

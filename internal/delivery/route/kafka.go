@@ -18,5 +18,6 @@ func (r *route) RunKafka() Closer {
 	producers := &producer.Producers{
 		NotificationProducer: producer.NewNotificationProducer(r.Log, r.KafkaGroup),
 	}
-	return producers.Close
+	r.producer = producers
+	return producers.NotificationProducer.Close
 }

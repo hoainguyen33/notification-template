@@ -54,11 +54,6 @@ func PhahubAPI(address string, r *gin.Engine, apiRoutes *gin.RouterGroup, c *con
 		otpData.POST("/request", c.RequestOtpController.RequestOTP)
 		otpData.POST("/verify", c.RequestOtpController.VerifyOTP)
 	}
-	apiRoutes.OPTIONS("/notification", Options, middleware.Cors())
-	notificationRoutes := apiRoutes.Group("/notification", middleware.Base(), middleware.Cors())
-	{
-		notificationRoutes.POST("/push", c.UserFcmController.Push)
-	}
 	return r.Run(address)
 }
 

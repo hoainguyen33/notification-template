@@ -66,6 +66,13 @@ func (r *route) RunAPI() error {
 		verifyOtpRoutes.DELETE("/:id", r.Controller.VerifyOtpController.Delete)
 	}
 
+	apiRoutes.OPTIONS("/notification", api.Options, middleware.Cors())
+	notificationRoutes := apiRoutes.Group("/notification", middleware.Base(), middleware.Cors())
+	{
+		notificationRoutes.POST("/push", r.Controller.UserFcmController.Push)
+		notificationRoutes.POST("/push-test", r.Controller.UserFcmController.TestKafka(r.producer.NotificationProducer.PublishMessage))
+	}
+
 	errGetcare := api.PhahubAPI(r.Cfg.Http.Address(), r.ApiGin, apiRoutes, r.Controller, r.GrpcsClient)
 	if errGetcare != nil {
 		return errGetcare

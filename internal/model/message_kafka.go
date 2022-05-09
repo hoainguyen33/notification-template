@@ -20,6 +20,16 @@ type KafkaMessage struct {
 	Msg   interface{} `json:"msg"`
 }
 
+type KafkaMessageUser struct {
+	Event string       `json:"event"`
+	Msg   *MessageUser `json:"msg"`
+}
+
+type KafkaMessageTest struct {
+	Event string      `json:"event"`
+	Msg   MessageUser `json:"msg"`
+}
+
 func (kmsg *KafkaMessage) String() string {
 	return fmt.Sprintf("event: %v, msg: %v", kmsg.Event, kmsg.Msg)
 }

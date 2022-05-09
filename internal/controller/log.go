@@ -7,8 +7,6 @@ import (
 
 type LogMessageController interface {
 	Write(log *model.LogMessage) error
-	// CreateLogMessage(msg *model.SendBroadcast, userId string) *model.LogMessage
-	// AddEventWS(msg []byte, log *model.LogMessage) (*socket.SendBroadcast, error)
 }
 
 type logMessageController struct {

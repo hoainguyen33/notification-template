@@ -4,8 +4,6 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
-
-	"github.com/guregu/null"
 )
 
 const (
@@ -56,10 +54,6 @@ func StringToInt(str string) int {
 		return 0
 	}
 	return i
-}
-
-func NullIntToInt32(value null.Int) int32 {
-	return int32(value.Int64)
 }
 
 func ParseInt32(idStr string) (int32, error) {

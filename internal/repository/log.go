@@ -25,9 +25,6 @@ func (lm *logMessageRepository) Write(log *model.LogMessage) error {
 	if log.IsDontSave {
 		return nil
 	}
-	if !log.LogOption {
-		log.Message = ""
-	}
 	collection := lm.Database.Collection("log")
 	_, err := collection.InsertOne(context.Background(), log)
 	return err

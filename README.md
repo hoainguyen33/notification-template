@@ -1,36 +1,30 @@
 ## Project Structure
 ```
 . 
-├── controller                  # all controller in here
-    ├── static.go               # handle generator file (ex: qrcode, barcode)
-    ├── template.go             # handle template file
-    └── {file}.go               # handle all request
-├── crontab                     # we save project crontab in here
-    ├── crontab.go              # management all crontab
-    └── {file}.go               # all file crontab
-├── firebase                    # we save project firebase notification in here
-    ├── firebase.go             # management all firebase
-    └── {file}.go               # all file firebase
-├── middleware                  # we save project middleware in here
-    ├── auth.go                 # middleware authentication
-    ├── base.go                 # middleware handle basesic
-    └── cors.go                 # middleware cors domain policy
-├── model                       # we save project struct/models in here
-    └── {file}.go               # all file model
-├── redis                       # we save project struct/models in here
-    ├── redis.go                # management all redis
-    └── {file}.go               # all file redis
-├── repository                  # we save project struct/repository in here
-    └── {file}.go               # all file repository
-├── router                      # router layer directories. all server router logics is here 
-    ├── api.go                  # all router generator auto
-    ├── socket.go               # handle router connect socket
-    └── api                     # a directory for custom http routers
-        └── my_api.go           # handle router custom
-├── service                     # request and connections to therd party servers is here
-    ├── {file}.go               # handle all process
+├── cmd                         # start project
+    ├── init.go                 # file init application
+    ├── main.go                 # file start application
+├── config                      # config of application
+    ├── config.go               # config with file, env, fangs
+    └── config.yaml             # config file
+├── common                      # common in project
+    ├── flags                   # flags cli app
+    ├── errors                  # errors used
+    └── {constant}.go           # constants used
+├── internal                    # internal project
+    ├── delivery                # contact domain and producer, consumer kafka
+    ├── domain                  # contact repositorys and services
+    ├── repository              # contact database, socket, ...
+    └── model                   # model struct
+├── pkg                         # all package application used
+    └── {package}               # new package
+├── proto                       # all proto file
+    └── {proto}.pb              # proto API of grpc service
+├── ssl                         # ssl key
+    ├── instruction.sh          # file create ssl key grpc server
+    └── {public_key}.bem        # public keys of services grpc
 ├── go.mod                      # go modules file
 ├── go.sum                      # go modules file
-├── main.go                     # project started in this file
+├── main.go                     # main file
 └── Readme.md                   # you read me here :)
 ```

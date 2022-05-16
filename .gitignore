@@ -19,7 +19,6 @@
 bin/
 .idea/
 .env
-getcare-messenger
 serviceAccountKey.json
 
 

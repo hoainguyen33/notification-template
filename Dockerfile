@@ -4,7 +4,7 @@ ENV GIN_MODE=debug
 ENV PORT=8000
 
 RUN apk update && apk add --no-cache git
-WORKDIR /src/github.com/getcare-messenger
+WORKDIR notificaiton-template
 
 COPY . .
 
